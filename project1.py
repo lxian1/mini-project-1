@@ -1,5 +1,7 @@
 import sqlite3
 import os.path
+import sys
+
 
 print('###############################')
 print('path:'+os.getcwd())
@@ -8,7 +10,11 @@ print('###############################')
 def login():
     while True:
         username = input('Please enter your username(email): ')
+        if username == 'exit':
+            sys.exit('The program is closed')        
         password = input('Please enter your password(integer): ')
+        if password == 'exit':
+            sys.exit('The program is closed')        
         conn = sqlite3.connect('./project1.db')
         c = conn.cursor()
         check = ('''SELECT * 
@@ -29,11 +35,11 @@ def login():
             print('Your unread message: ')
             print(c.fetchone())
             update_seen = ('''UPDATE inbox
-                         SET seen = 'y'
-                         WHERE email = ?''')
+                              SET seen = 'y'
+                              WHERE email = ?''')
             c.execute(update_seen,[username])
             conn.commit()
-            menu()
+            menu(c,conn)
             
             return False
         else:
@@ -43,7 +49,11 @@ def login():
 def register():
     while True:
         username = input('Please provide your username(email): ')
+        if username == 'exit':
+            sys.exit('The program is closed')        
         password = input('Please create your password(integer): ')
+        if password == 'exit':
+            sys.exit('The program is closed')        
         conn = sqlite3.connect('./project1.db')
         c = conn.cursor()
         check = ('''SELECT * 
@@ -59,8 +69,19 @@ def register():
             print('You have successfully signed up!')
             return False
 
-#def logout():
-    #break
+def logout(c,conn):
+    print('FAREWELL')
+    conn.close()
+    main()
+
+def close(c,conn):
+    print('The program is closing...')
+    print('Bye')
+    conn.close()
+
+
+
+
 
 #def OfferRide():
     #break
@@ -77,14 +98,15 @@ def register():
 #def SerchAndDelete():
     #break
    
-def menu():
+def menu(c,conn):
     print('1.Offer a ride')
     print('2.Search for rides')
     print('3.Book members or cancel bookings.')
     print('4.Post ride requests')
     print('5.Search and delete ride requests')
-    print('6.logout')
-    task = input('What task would you like to perform(1-5):')
+    print('6.Logout')
+    print('7.Exit the program')
+    task = input('What task would you like to perform(1-6):')
     if task == '1':
         OfferRide()
         
@@ -101,7 +123,10 @@ def menu():
         SerchAndDelete()
     
     elif task == '6':
-        logout()
+        logout(c,conn)
+    
+    elif task == '7':
+        close(c,conn)
         
     
     
@@ -109,14 +134,15 @@ def menu():
     
 
 def main():
-    membership = input('Do you have an account?(Y/N):')
+    print('You can exit anytime by input "exit"')
+    membership = input('Do you have an account?(Y/N):').upper()
     if membership == 'Y':
         login()
-    else:
+    elif membership == 'N':
         register()
         login()
-    
-    
+    elif membership == 'EXIT':
+        sys.exit('Bye')
 main()
 
 
