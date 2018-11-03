@@ -62,7 +62,7 @@ def register():
     
 
 def main():
-    membership = input('Do you have an account?(Y/N):')
+    membership = upper(input('Do you have an account?(Y/N):'))
     if membership == 'Y':
         login()
     else:
