@@ -39,7 +39,7 @@ def login():
                               WHERE email = ?''')
             c.execute(update_seen, [username])
             conn.commit()
-            menu(c, conn)
+            menu(c, conn, username)
 
             return False
         else:
@@ -101,7 +101,7 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
         return 0
     lugdesc = input("Enter a description for the luggage:")
     src = input("Enter the source location (lcode, or keyword):")
-    HandleLocation(c, src)
+    srclcode = HandleLocation(c, src)
     dst = input("Enter the destination location (lcode, or keyword):")
     HandleLocation(c, dst)
 
@@ -173,10 +173,8 @@ def Scroll5(rows, title):
         elif option == "prev":
             current -= 5
 
-
 def ValidDate():  # TODO This function will check if the date someone enters is valid
     pass
-
 
 # def BookOrCancel():
 # break
