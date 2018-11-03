@@ -39,7 +39,7 @@ def login():
                               WHERE email = ?''')
             c.execute(update_seen,[username])
             conn.commit()
-            menu(c,conn)
+            menu(c,conn,username)
             
             return False
         else:
@@ -80,23 +80,6 @@ def close(c,conn):
     conn.close()
 
 
-
-
-
-
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
 def OfferRide(c, conn, username): # The UI for when someone is inputting a ride.
     print("Please provide your ride information")
     ridedate = input("Ride Date (YYYY-MM-DD):") # TODO: Validate date
@@ -205,7 +188,7 @@ def ValidDate(): # TODO This function will check if the date someone enters is v
 #def SerchAndDelete():
     #break
    
-def menu(c,conn):
+def menu(c,conn,username):
     print('1.Offer a ride')
     print('2.Search for rides')
     print('3.Book members or cancel bookings.')
@@ -215,7 +198,7 @@ def menu(c,conn):
     print('7.Exit the program')
     task = input('What task would you like to perform(1-6):')
     if task == '1':
-        OfferRide(c,conn)
+        OfferRide(c,conn,username)
         
     elif task == '2':
         SerchRide(c,conn)
