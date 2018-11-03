@@ -34,8 +34,6 @@ def login():
             c.execute(update_seen,[username])
             conn.commit()
 
-            OfferRide(c,conn,username)
-
             return False
         else:
             print('Invalid account!')
