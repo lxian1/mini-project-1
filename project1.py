@@ -33,6 +33,7 @@ def login():
                          WHERE email = ?''')
             c.execute(update_seen,[username])
             conn.commit()
+            menu()
             
             return False
         else:
@@ -57,12 +58,58 @@ def register():
             conn.commit()
             print('You have successfully signed up!')
             return False
-  
-            
+
+#def logout():
+    #break
+
+#def OfferRide():
+    #break
+
+#def SerchRide():
+    #break
+
+#def BookOrCancel():
+    #break
+
+#def PostRequests():
+    #break
+
+#def SerchAndDelete():
+    #break
+   
+def menu():
+    print('1.Offer a ride')
+    print('2.Search for rides')
+    print('3.Book members or cancel bookings.')
+    print('4.Post ride requests')
+    print('5.Search and delete ride requests')
+    print('6.logout')
+    task = input('What task would you like to perform(1-5):')
+    if task == '1':
+        OfferRide()
+        
+    elif task == '2':
+        SerchRide()
+        
+    elif task == '3':
+        BookOrCancel()
+        
+    elif task == '4':
+        PostRequests()
+        
+    elif task == '5':
+        SerchAndDelete()
+    
+    elif task == '6':
+        logout()
+        
+    
+    
+
     
 
 def main():
-    membership = upper(input('Do you have an account?(Y/N):'))
+    membership = input('Do you have an account?(Y/N):')
     if membership == 'Y':
         login()
     else:
