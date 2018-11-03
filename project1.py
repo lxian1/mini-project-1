@@ -60,6 +60,15 @@ def register():
   
             
     
+def offerRide(): # The UI for when someone is inputting a ride.
+    print("Please provide your ride information")
+    ridedate = input("Ride Date (YYYY-MM-DD):")
+
+def validDate(): # This function will check if the date someone enters is valid
+
+
+
+
 
 def main():
     membership = upper(input('Do you have an account?(Y/N):'))
