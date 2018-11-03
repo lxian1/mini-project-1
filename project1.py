@@ -61,7 +61,7 @@ def register():
                     WHERE email = ? ''')
         c.execute(check,[(username)])
         if c.fetchone():
-            print('This eamil has already been registered!')
+            print('This email has already been registered!')
         else:
             new = ('''INSERT INTO members VALUES(?,'','',?)''')
             c.execute(new,[(username),(password)])
@@ -86,8 +86,38 @@ def close(c,conn):
 #def OfferRide():
     #break
 
-#def SerchRide():
-    #break
+def SerchRide(c,conn):
+    location_keyword = []
+    for i in range(0,3):
+        lkeyword = input("Please enter 1-3 location keywords: ").lower()
+        location_keyword.append(lkeyword)
+    retrieve = ('''SELECT * FROM rides WHERE src LIKE ''
+                   
+                ''')
+    c.execute(retrieve,[(location_keyword[0])])
+    for i in c.fetchall():
+        print(i)
+    
+    
+    
+    
+    print([(location_keyword[0])])
+    
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 #def BookOrCancel():
     #break
@@ -108,10 +138,10 @@ def menu(c,conn):
     print('7.Exit the program')
     task = input('What task would you like to perform(1-6):')
     if task == '1':
-        OfferRide()
+        OfferRide(c,conn)
         
     elif task == '2':
-        SerchRide()
+        SerchRide(c,conn)
         
     elif task == '3':
         BookOrCancel()
@@ -142,7 +172,7 @@ def main():
         register()
         login()
     elif membership == 'EXIT':
-        sys.exit('Bye')
+        sys.exit('The program is closed')
 main()
 
 
