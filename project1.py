@@ -86,24 +86,58 @@ def close(c, conn):
 
 def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride.
     print("Please provide your ride information")
+
     ridedate = input("Ride Date (YYYY-MM-DD):")  # TODO: Validate date
+
     seats = input("How many seats will be offered?: ")
-    try:
-        int(seats)
-    except ValueError:
-        print("Value was not an integer amount!")
+    if not assertInt(seats):
         return 0
+
     price = input("What is the price per seat?: $")
-    try:
-        int(seats)
-    except ValueError:
-        print("Value was not an integer amount!")
+    if not assertInt(seats):
         return 0
+    price = int(price)
+    if price <= 0:
+        print("Value must be positive")
+        return 0
+
     lugdesc = input("Enter a description for the luggage:")
+
     src = input("Enter the source location (lcode, or keyword):")
     srclcode = HandleLocation(c, src)
     dst = input("Enter the destination location (lcode, or keyword):")
-    HandleLocation(c, dst)
+    dstlcode = HandleLocation(c, dst)
+    if(not srclcode or not dstlcode):
+        print("Invalid src or dst")
+
+    cno = input("Input Car number, or leave blank:")
+    #if a value for cno was entered, check if the car belongs to them:
+    if cno:
+        c.execute('''SELECT cno 
+                     FROM cars WHERE
+                     owner = ? AND
+                     cno = ?''', (username,cno))
+        rows = c.fetchall()
+        if(not len(rows) > 0):
+            print("Car not found, or is not under your ownership.")
+    c.execute('''SELECT max(rno)
+                 FROM rides''')
+    rno = c.fetchone()[0] + 1
+
+
+    print((rno, price, ridedate, seats, lugdesc, srclcode, dstlcode, username, cno))
+    c.execute('''INSERT INTO rides(rno, price, rdate, seats, lugDesc, src, dst, driver, cno)
+                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)''', (rno, price, ridedate, seats, lugdesc, srclcode, dstlcode, username, cno))
+    conn.commit()
+    return 1
+
+def assertInt(value):  # Returns 1 if a valid integer was used.
+    try:
+        int(value)
+    except ValueError:
+        print("Value was not an integer amount!")
+        return 0
+    return 1
 
 
 # This function handles whether a lcode entered is valid
@@ -111,22 +145,23 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
 # returns an lcode if we were able to find a location
 # returns 0 if no location was found
 def HandleLocation(c, code):
-    c.execute("""SELECT *
+    c.execute('''SELECT *
                 FROM locations WHERE
-                lcode = ?""", code)
+                lcode = ?''', (code,))
 
     rows = c.fetchall()
     if len(rows) == 1:  # If there is only one location matching the string
+        rows = rows[0]
         city, prov, address = rows[1], rows[2], rows[3]
-        print("Location set to: %s, %s, %s" % (address, prov, city))
+        print("Location set to: %s, %s, %s" % (address, city, prov))
+        return rows[0] # Return lcode
     else:
-        check = c.execute('SELECT * FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?',
-                          ('%' + code + '%'))
-
+        code = ("%" + code + "%")
+        c.execute("SELECT * FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?", (code, code, code))
         rows = c.fetchall()
         row = Scroll5(rows, """"Multiple locations found, please select from below.\n
        Number, Lcode, City, Province, Address""")
-        return row[0]
+        return row[0] # Return lcode
 
 
 # This function will take in a list of rows (List of tuples)
@@ -165,7 +200,7 @@ def Scroll5(rows, title):
                     print("Invalid input")
                 else:
                     if 1 <= numoption and numoption <= len(rows):
-                        return rows[int(option)]
+                        return rows[int(option) - 1]
                     else:
                         print("Invalid option number, out of bounds.")
         if option == "next":
