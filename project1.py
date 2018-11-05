@@ -1,21 +1,26 @@
 import sqlite3
 import os.path
 import sys
+from secrets import randbelow
+import datetime
 
 print('###############################')
 print('path:' + os.getcwd())
 print('###############################')
 
 
-def login():
+def login(database):
     while True:
         username = input('Please enter your username(email): ')
         if username == 'exit':
             sys.exit('The program is closed')
+        #elif username == '':
+            #print('Emial cannot be empty!')
+            #sys.exit('The program is closed')
         password = input('Please enter your password(integer): ')
         if password == 'exit':
             sys.exit('The program is closed')
-        conn = sqlite3.connect('./project1.db') #TODO: Make this a command-line argument.
+        conn = sqlite3.connect(database) #TODO: Make this a command-line argument.
         c = conn.cursor()
         check = ('''SELECT * 
                     FROM members 
@@ -47,7 +52,7 @@ def login():
             print('Try Again!')
 
 
-def register():
+def register(database):
     while True:
         username = input('Please provide your username(email): ')
         if username == 'exit':
@@ -55,7 +60,7 @@ def register():
         password = input('Please create your password(integer): ')
         if password == 'exit':
             sys.exit('The program is closed')
-        conn = sqlite3.connect('./project1.db')
+        conn = sqlite3.connect(database)
         c = conn.cursor()
         check = ('''SELECT * 
                     FROM members 
@@ -88,6 +93,14 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
     print("Please provide your ride information")
 
     ridedate = input("Ride Date (YYYY-MM-DD):")  # TODO: Validate date
+    year,month,day = ridedate.split('-')
+    check_date = True
+    try:
+        datetime.datetime(int(year),int(month),int(day))
+    except:
+        check_date = False
+        print('Invalid date! Please enter it again!')
+        OfferRide(c,conn,username)    
 
     seats = input("How many seats will be offered?: ")
     if not assertInt(seats):
@@ -216,9 +229,9 @@ def Scroll5(rows, title):
         elif option == "prev":
             current -= 5
 
-def ValidDate():  # TODO This function will check if the date someone enters is valid
-
-    pass
+def ValidDate(time):  # TODO This function will check if the date someone enters is valid
+    pass              ## I checkded it inside the original function
+        
 
 def BookOrCancel(c,conn,username):
     while(True):
@@ -306,8 +319,35 @@ def BookOrCancel(c,conn,username):
 
         conn.commit()
 
-# def PostRequests():
-# break
+def PostRequests(c,conn,username):
+    print('Please enter the details of your request.')
+    finished = False
+    while (not finished):
+        email = username
+        date =  input('Please enter the date(YYYY-MM-DD): ')
+        year,month,day = date.split('-')
+        check_date = True
+        try:
+            datetime.datetime(int(year),int(month),int(day))
+        except:
+            check_date = False
+            print('Invalid date! Please enter it again!')
+            PostRequests(c,conn,username)
+        pickup = input('Where do you want to be pick up(lcode)?')
+        dropoff = input('Where do you want to be drop off(lcode)?')
+        try:
+            price = int(input('How much are you willing to pay per seat(int)?'))
+            finished = True
+        except:
+            print('Please enter an integer!')
+    #generate unique ids for requests
+    rid = randbelow(9999999999)
+    post = ('''INSERT INTO requests
+               VALUES(?,?,?,?,?,?)
+            ''')
+    c.execute(post,[(rid),(username),(date),(pickup),(dropoff),(price)])
+    conn.commit()
+    print('Your request has been posted!')
 
 def SearchAndDelete(c, conn, username):
     while(True):
@@ -367,10 +407,6 @@ def SearchAndDelete(c, conn, username):
             print("Invalid input")
             input("Press enter to continue")
 
-
-def ValidDate(): # TODO This function will check if the date someone enters is valid
-    pass
-
 def SearchRide(c,conn,username):
     location_keyword = []# Create a list of key words
     for i in range(0,3):
@@ -429,18 +465,28 @@ def menu(c, conn, username):
     task = input('What task would you like to perform(1-6):')
     if task == '1':
         OfferRide(c, conn, username)
+        print('##############')
+        menu(c, conn, username)
 
     elif task == '2':
         SearchRide(c,conn,username)
+        print('################')
+        menu(c, conn, username)
 
     elif task == '3':
         BookOrCancel(c, conn, username)
+        print('################')
+        menu(c, conn, username)
 
     elif task == '4':
-        PostRequests()
+        PostRequests(c,conn,username)
+        print('################')
+        menu(c, conn, username)
 
     elif task == '5':
         SearchAndDelete(c, conn, username)
+        print('################ ')
+        menu(c, conn, username)
 
     elif task == '6':
         logout(c, conn)
@@ -451,13 +497,13 @@ def menu(c, conn, username):
 
 def main():
     print('You can exit anytime by input "exit"')
+    db = input('Enter the name of your database : ')
     membership = input('Do you have an account?(Y/N):').upper()   
     if membership == 'Y':
-        login()
+        login(db)
     elif membership == 'N':
-        register()
-        login()
+        register(db)
+        login(db)
     elif membership == 'EXIT':
         sys.exit('The program is closed')
-
 main()
