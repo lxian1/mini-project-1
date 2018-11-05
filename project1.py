@@ -354,6 +354,10 @@ def SearchAndDelete(c, conn, username):
 
         elif choice == "2" and len(rows) != 0:
             selection = int(input("Please enter the index number above of the request you would like to delete: "))
+            if selection < 1 or selection > len(rows):
+                print("Invalid index")
+                input("Press enter to continue...")
+                continue
             c.execute('''DELETE FROM requests WHERE
                          rid = ?''', (rows[selection - 1][0],))
         elif choice == "exit":
