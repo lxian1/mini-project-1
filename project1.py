@@ -309,8 +309,59 @@ def BookOrCancel(c,conn,username):
 # def PostRequests():
 # break
 
-def SearchAndDelete():
-    pass
+def SearchAndDelete(c, conn, username):
+    while(True):
+        print("")
+        print("Your ride requests:\n")
+        c.execute('''SELECT * FROM
+                     requests WHERE
+                     email = ?''', (username,))
+        rows = c.fetchall()
+        if len(rows) == 0:
+            print("(no requests found)")
+        else:
+            print("rid, email, rdate, pickup, dropoff, amount")
+            i = 1
+            for row in rows:
+                print("%d:" % i,row)
+                i += 1
+
+        print("")
+        print("1. Search for a request")
+        if len(rows) != 0:
+            print("2. Delete a ride request\n")
+
+        choice = input("Please enter an option number, or 'exit': ")
+        if choice == "1":
+            code = (input("Please enter a location code, or city name: ")).capitalize()
+            c.execute('''SELECT DISTINCT rid, email, rdate, pickup, dropoff, amount
+                         FROM requests, locations WHERE
+                         requests.pickup = locations.lcode AND
+                         locations.lcode = ? OR
+                         locations.city = ?''', (code,code))
+            rows = c.fetchall()
+            if len(rows) == 0:
+                print("No locations found.")
+                input("Press enter to continue...")
+                continue
+
+            email = Scroll5(rows,"Select a request to message the creator")[1]
+            message = input("Type a message to send: ")
+            c.execute('''INSERT INTO inbox(email,msgTimestamp,sender, content, rno, seen)
+                         VALUES(?, datetime("now"), ?, ?, NULL, "n")''', (email, username, message))
+            conn.commit()
+            print("Message sent")
+
+        elif choice == "2" and len(rows) != 0:
+            selection = int(input("Please enter the index number above of the request you would like to delete: "))
+            c.execute('''DELETE FROM requests WHERE
+                         rid = ?''', (rows[selection - 1][0],))
+        elif choice == "exit":
+            return 1
+        else:
+            print("Invalid input")
+            input("Press enter to continue")
+
 
 def menu(c, conn, username):
     print('1.Offer a ride')
