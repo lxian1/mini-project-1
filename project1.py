@@ -2,26 +2,31 @@ import sqlite3
 import os.path
 import sys
 
-print('###############################')
-print('path:' + os.getcwd())
-print('###############################')
 
+print('###############################')
+print('path:'+os.getcwd())
+print('###############################')
 
 def login():
     while True:
         username = input('Please enter your username(email): ')
         if username == 'exit':
-            sys.exit('The program is closed')
+            sys.exit('The program is closed')        
         password = input('Please enter your password(integer): ')
         if password == 'exit':
+<<<<<<< HEAD
+            sys.exit('The program is closed')        
+        conn = sqlite3.connect('./project1.db')
+=======
             sys.exit('The program is closed')
         conn = sqlite3.connect('./project1.db') #TODO: Make this a command-line argument.
+>>>>>>> seiver
         c = conn.cursor()
         check = ('''SELECT * 
                     FROM members 
                     WHERE email = ? 
                     AND pwd = ?''')
-        c.execute(check, [(username), (password)])
+        c.execute(check,[(username),(password)])
         result = c.fetchone()
         if result:
             print('Welcome back!')
@@ -30,65 +35,70 @@ def login():
             message = ('''SELECT content
                           From inbox
                           Where email = ?''')
-            c.execute(message, [username])
+            c.execute(message,[username])
             print('#######################')
             print('Your unread message: ')
             print(c.fetchone())
             update_seen = ('''UPDATE inbox
                               SET seen = 'y'
                               WHERE email = ?''')
-            c.execute(update_seen, [username])
+            c.execute(update_seen,[username])
             conn.commit()
+<<<<<<< HEAD
+            menu(c,conn,username)
+            
+=======
             menu(c, conn, username)
 
+>>>>>>> seiver
             return False
         else:
             print('Invalid account!')
             print('Try Again!')
 
-
 def register():
     while True:
         username = input('Please provide your username(email): ')
         if username == 'exit':
-            sys.exit('The program is closed')
+            sys.exit('The program is closed')        
         password = input('Please create your password(integer): ')
         if password == 'exit':
-            sys.exit('The program is closed')
+            sys.exit('The program is closed')        
         conn = sqlite3.connect('./project1.db')
         c = conn.cursor()
         check = ('''SELECT * 
                     FROM members 
                     WHERE email = ? ''')
-        c.execute(check, [(username)])
+        c.execute(check,[(username)])
         if c.fetchone():
             print('This email has already been registered!')
         else:
             new = ('''INSERT INTO members VALUES(?,'','',?)''')
-            c.execute(new, [(username), (password)])
+            c.execute(new,[(username),(password)])
             conn.commit()
             print('You have successfully signed up!')
             return False
 
-
-def logout(c, conn):
+def logout(c,conn):
     print('FAREWELL')
     conn.close()
     main()
 
-
-def close(c, conn):
+def close(c,conn):
     print('The program is closing...')
     print('Bye')
     conn.close()
 
 
-
-def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride.
+def OfferRide(c, conn, username): # The UI for when someone is inputting a ride.
     print("Please provide your ride information")
+<<<<<<< HEAD
+    ridedate = input("Ride Date (YYYY-MM-DD):") # TODO: Validate date
+=======
 
     ridedate = input("Ride Date (YYYY-MM-DD):")  # TODO: Validate date
 
+>>>>>>> seiver
     seats = input("How many seats will be offered?: ")
     if not assertInt(seats):
         return 0
@@ -143,12 +153,28 @@ def assertInt(value):  # Returns 1 if a valid integer was used.
         return 0
     return 1
 
-
 # This function handles whether a lcode entered is valid
 # or helps find a city based off of a keyword.
 # returns an lcode if we were able to find a location
 # returns 0 if no location was found
 def HandleLocation(c, code):
+<<<<<<< HEAD
+    c.execute("""SELECT *
+                 FROM locations WHERE
+                 lcode = ?""", code)
+ 
+    rows = c.fetchall()
+    if len(rows) == 1: # If there is only one location matching the string
+        city, prov, address = rows[1],rows[2],rows[3]
+        print("Location set to: %s, %s, %s" % (address, prov, city))
+    else:
+        check = c.execute('SELECT * FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?', ('%' + code + '%'))
+ 
+        rows = c.fetchall()
+        row = Scroll5(rows,""""Multiple locations found, please select from below.\n
+        Number, Lcode, City, Province, Address""")
+        return row[0]
+=======
     c.execute('''SELECT *
                 FROM locations WHERE
                 lcode = ?''', (code,))
@@ -169,6 +195,7 @@ def HandleLocation(c, code):
         row = Scroll5(rows, """"Multiple locations found, please select from below.\n
        Number, Lcode, City, Province, Address""")
         return row[0] # Return lcode
+>>>>>>> seiver
 
 
 # This function will take in a list of rows (List of tuples)
@@ -176,18 +203,30 @@ def HandleLocation(c, code):
 # Returns the row the user selects
 def Scroll5(rows, title):
     current = 0
+<<<<<<< HEAD
+    while(True):
+=======
     while (True):
         print("\n")
+>>>>>>> seiver
         print(title)
-        for i in range(current, current + 5):
+        for i in range(current, current+5):
             if i > len(rows) - 1:
                 continue
+<<<<<<< HEAD
+            print(i + 1,rows[i])
+ 
+        validinput = False
+        option = ""
+        while(not validinput):
+=======
             print("%d." % (i + 1), rows[i])
 
         validinput = False
         option = ""
         while (not validinput):
             print("\n")
+>>>>>>> seiver
             if current + 5 > len(rows) - 1:
                 option = input("Select a number from above, or 'prev' to see previous options: ")
                 if option == "prev":
@@ -200,7 +239,7 @@ def Scroll5(rows, title):
                 option = input("Select a number from above, or input 'prev or 'next' to see previous or more options: ")
                 if option == "next" or option == "prev":
                     validinput = True
-
+ 
             if not validinput:
                 try:
                     numoption = int(option)
@@ -216,9 +255,13 @@ def Scroll5(rows, title):
         elif option == "prev":
             current -= 5
 
+<<<<<<< HEAD
+
+=======
 def ValidDate():  # TODO This function will check if the date someone enters is valid
 
     pass
+>>>>>>> seiver
 
 def BookOrCancel(c,conn,username):
     while(True):
@@ -263,6 +306,8 @@ def BookOrCancel(c,conn,username):
             if not contin:
                 continue
 
+<<<<<<< HEAD
+=======
             costper = int(input("Enter the cost per seat: $"))
             pickup = input("Enter the pickup location code: ")
             dropoff = input("Enter the dropoff location code: ")
@@ -305,10 +350,11 @@ def BookOrCancel(c,conn,username):
             return 1
 
         conn.commit()
+>>>>>>> seiver
 
-# def PostRequests():
-# break
 
+<<<<<<< HEAD
+=======
 def SearchAndDelete(c, conn, username):
     while(True):
         print("")
@@ -367,8 +413,24 @@ def SearchAndDelete(c, conn, username):
             print("Invalid input")
             input("Press enter to continue")
 
+>>>>>>> seiver
 
-def menu(c, conn, username):
+def ValidDate(): # TODO This function will check if the date someone enters is valid
+    pass
+    
+    
+    
+
+#def BookOrCancel():
+    #break
+
+#def PostRequests():
+    #break
+
+#def SerchAndDelete():
+    #break
+   
+def menu(c,conn,username):
     print('1.Offer a ride')
     print('2.Search for rides')
     print('3.Book members or cancel bookings.')
@@ -378,25 +440,45 @@ def menu(c, conn, username):
     print('7.Exit the program')
     task = input('What task would you like to perform(1-6):')
     if task == '1':
-        OfferRide(c, conn, username)
-
+        OfferRide(c,conn,username)
+        
     elif task == '2':
-        SerchRide(c, conn)
-
+        SerchRide(c,conn)
+        
     elif task == '3':
+<<<<<<< HEAD
+        BookOrCancel()
+        
+=======
         BookOrCancel(c, conn, username)
 
+>>>>>>> seiver
     elif task == '4':
         PostRequests()
-
+        
     elif task == '5':
+<<<<<<< HEAD
+        SerchAndDelete()
+    
+=======
         SearchAndDelete(c, conn, username)
 
+>>>>>>> seiver
     elif task == '6':
-        logout(c, conn)
-
+        logout(c,conn)
+    
     elif task == '7':
-        close(c, conn)
+        close(c,conn)
+        
+    
+    
+
+    
+
+
+
+
+
 
 
 def main():
@@ -409,5 +491,9 @@ def main():
         login()
     elif membership == 'EXIT':
         sys.exit('The program is closed')
+<<<<<<< HEAD
+main()
+=======
 
 main()
+>>>>>>> seiver
