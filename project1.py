@@ -20,11 +20,6 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
         input("Press enter to continue...")
         return False
 
-    if len(ridedate) != 10:
-        print("Invalid date string")
-        input("Press enter to continue...\n")
-        return 0
-
     seats = input("How many seats will be offered?: ")
     if not assertInt(seats):
         input("Press enter to continue...\n")
@@ -50,6 +45,7 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
     dstlcode = HandleLocation(c, dst)
     if not dstlcode:
         return 0
+
     cno = input("Input Car number, or leave blank:")
     #if a value for cno was entered, check if the car belongs to them:
     if cno:
@@ -63,12 +59,37 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
             input("Press enter to continue...\n")
             return 0
 
+    enroute = input("Enter any number of enroute locations, separated by commas ex: a,b,c: ")
+    if enroute == "":
+        print("Invalid Input")
+        input("Press enter to continue...\n")
+        return 0
+    try:
+        codes = enroute.split(",")
+    except ValueError:
+        print("Invalid Input")
+        input("Press enter to continue...\n")
+        return 0
+    codes = enroute.split(",")
+    enlcodes = []
+    for code in codes:
+        if not code:
+            print("Code cannot be blank, ignoring...")
+            input("Press enter to continue...\n")
+            continue
+        enlcodes.append(HandleLocation(c, code))
+
+
     c.execute('''SELECT max(rno)
                  FROM rides''')
     rno = c.fetchone()[0] + 1
 
+    for lcode in enlcodes:
+        c.execute('''INSERT INTO enroute(rno,lcode)
+                     VALUES(?, ?)''', (rno, lcode))
+
     c.execute('''INSERT INTO rides(rno, price, rdate, seats, lugDesc, src, dst, driver, cno)
-                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)''', (rno, price, ridedate, seats, lugdesc, srclcode, dstlcode, username, cno))
+                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)''', (rno, price, date, seats, lugdesc, srclcode, dstlcode, username, cno))
     conn.commit()
     print("Your ride has been created.")
     input("Press enter to continue...\n")
