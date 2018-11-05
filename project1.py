@@ -329,8 +329,8 @@ def SearchAndDelete(c, conn, username):
         print("")
         print("1. Search for a request")
         if len(rows) != 0:
-            print("2. Delete a ride request\n")
-
+            print("2. Delete a ride request")
+        print("")
         choice = input("Please enter an option number, or 'exit': ")
         if choice == "1":
             code = (input("Please enter a location code, or city name: ")).capitalize()
@@ -360,6 +360,7 @@ def SearchAndDelete(c, conn, username):
                 continue
             c.execute('''DELETE FROM requests WHERE
                          rid = ?''', (rows[selection - 1][0],))
+            conn.commit()
         elif choice == "exit":
             return 1
         else:
