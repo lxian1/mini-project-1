@@ -176,6 +176,98 @@ def Scroll5(rows, title):
 def ValidDate(): # TODO This function will check if the date someone enters is valid
     pass
     
+
+#This function is a special version of Scroll5
+#And it's only used in Q2
+def Scroll5_Q2(rows, title):
+    current = 0
+    while(True):
+        print(title)
+        for i in range(current, current+5):
+            if i > len(rows) - 1:
+                print("")
+                continue
+            print(i + 1,rows[i])
+ 
+        validinput = False
+        option = ""
+        while(not validinput):
+            if current + 5 > len(rows) - 1:
+                option = input("Select a number from above, or 'prev' to see previous options: ")
+                if option == "prev":
+                    validinput = True
+            elif current == 0:
+                option = input("Select a number from above, or input 'next' for more options: ")
+                if option == "next":
+                    validinput = True
+            else:
+                option = input("Select a number from above, or input 'prev or 'next' to see previous or more options: ")
+                if option == "next" or option == "prev":
+                    validinput = True
+ 
+            if not validinput:
+                try:
+                    numoption = int(option)
+                except ValueError:
+                    print("Invalid input")
+                else:
+                    if 1 <= numoption and numoption <= len(rows):
+                        return rows[int(option)-1]
+                    else:
+                        print("Invalid option number, out of bounds.")
+        if option == "next":
+            current += 5
+        elif option == "prev":
+            current -= 5
+
+def SerchRide(c,conn,username):
+    location_keyword = []# Create a list of key words
+    for i in range(0,3):
+        lkeyword = input("Please enter 1-3 location keywords: ").lower()
+        location_keyword.append(lkeyword)
+    keyword_a = location_keyword[0]
+    if location_keyword[1] == '':      
+        keyword_b = location_keyword[0]#The first keyword cannot be empty
+    else:                              #If the second or the third keywords are empty,set their values to the first keyword. 
+        keyword_b = location_keyword[1]
+    if location_keyword[2] == '':
+        keyword_c = location_keyword[0]
+    else:
+        keyword_c = location_keyword[2]    
+    #Select the results that match all the keywords    
+    search = c.execute('''SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno 
+                          FROM rides r,enroute e,locations l
+                          WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
+                          AND e.rno = r.rno
+                          INTERSECT
+                          SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno 
+                          FROM rides r,enroute e,locations l
+                          WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
+                          AND e.rno = r.rno
+                          INTERSECT
+                          SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno 
+                          FROM rides r,enroute e,locations l
+                          WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
+                          AND e.rno = r.rno
+                       ''', ('%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
+                             '%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
+                             '%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a)))
+    rows = c.fetchall()
+    row = Scroll5_Q2(rows,"Here are the results: ")
+    print('Thanks for selecting this ride: ')
+    print(row)
+    email = row[7]
+    content = 'I want to book a seat on your ride.'
+    rno = row[0]
+    seen = 'n'
+    sender = username
+    message = ('''INSERT INTO inbox
+                  VALUES(?,DateTime('now'),?,?,?,?)
+               ''')
+    c.execute(message,[(email),(sender),(content),(rno),(seen)])
+    conn.commit()
+    print('A message has been sent to the driver.')
+     
     
     
 
@@ -201,7 +293,7 @@ def menu(c,conn,username):
         OfferRide(c,conn,username)
         
     elif task == '2':
-        SerchRide(c,conn)
+        SerchRide(c,conn,username)
         
     elif task == '3':
         BookOrCancel()
@@ -231,7 +323,7 @@ def menu(c,conn,username):
 
 def main():
     print('You can exit anytime by input "exit"')
-    membership = input('Do you have an account?(Y/N):').upper()
+    membership = input('Do you have an account?(Y/N):').upper()   
     if membership == 'Y':
         login()
     elif membership == 'N':
