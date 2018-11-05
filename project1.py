@@ -7,14 +7,17 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
     ridedate = input("Ride Date (YYYY-MM-DD):")
     seats = input("How many seats will be offered?: ")
     if not assertInt(seats):
+        input("Press enter to continue...\n")
         return 0
 
     price = input("What is the price per seat?: $")
     if not assertInt(seats):
+        input("Press enter to continue...\n")
         return 0
     price = int(price)
     if price <= 0:
         print("Value must be positive")
+        input("Press enter to continue...\n")
         return 0
 
     lugdesc = input("Enter a description for the luggage:")
@@ -37,6 +40,7 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
         rows = c.fetchall()
         if(not len(rows) > 0):
             print("Car not found, or is not under your ownership.")
+            input("Press enter to continue...\n")
             return 0
 
     c.execute('''SELECT max(rno)
@@ -47,7 +51,7 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
                  VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)''', (rno, price, ridedate, seats, lugdesc, srclcode, dstlcode, username, cno))
     conn.commit()
     print("Your ride has been created.")
-    input("Press enter to continue...")
+    input("Press enter to continue...\n")
     return 1
 
 
@@ -81,6 +85,7 @@ def HandleLocation(c, code):
         rows = c.fetchall()
         if len(rows) == 0:
             print("No locations found")
+            input("Press enter to continue...\n")
             return 0
         row = Scroll5(rows, """"Multiple locations found, please select from below.\n
        Number, Lcode, City, Province, Address""")
@@ -343,7 +348,7 @@ def menu(c, conn, username):
         print('5.Search and delete ride requests')
         print('6.Logout')
         print('7.Exit the program')
-        task = input('What task would you like to perform(1-6):')
+        task = input('What task would you like to perform(1-6): ')
         if task == '1':
             OfferRide(c, conn, username)
 
@@ -360,7 +365,7 @@ def menu(c, conn, username):
             SearchAndDelete(c, conn, username)
 
         elif task == '6':
-            print("Logging out. Farewell!")
+            print("Logging out. Farewell!\n")
             return False
 
         elif task == '7':
