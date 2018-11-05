@@ -1,10 +1,30 @@
 import sqlite3
-import os.path
 import sys
+import datetime
 
 def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride.
     print("Please provide your ride information")
-    ridedate = input("Ride Date (YYYY-MM-DD):")
+    date = input("Ride Date (YYYY-MM-DD):")
+    try:
+        year, month, day = date.split('-')
+    except ValueError:
+        print("Invalid date string")
+        input("Press enter to continue...")
+        return False
+
+    year, month, day = date.split('-')
+    try:
+        datetime.datetime(int(year), int(month), int(day))
+    except:
+        print('Invalid date')
+        input("Press enter to continue...")
+        return False
+
+    if len(ridedate) != 10:
+        print("Invalid date string")
+        input("Press enter to continue...\n")
+        return 0
+
     seats = input("How many seats will be offered?: ")
     if not assertInt(seats):
         input("Press enter to continue...\n")
@@ -81,29 +101,28 @@ def HandleLocation(c, code):
         return rows[0] # Return lcode
     else:
         code = ("%" + code + "%")
-        c.execute("SELECT * FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?", (code, code, code))
+        c.execute("SELECT lcode, address, city, prov FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?", (code, code, code))
         rows = c.fetchall()
         if len(rows) == 0:
             print("No locations found")
             input("Press enter to continue...\n")
             return 0
-        row = Scroll5(rows, """"Multiple locations found, please select from below.\n
-       Number, Lcode, City, Province, Address""")
+        row = Scroll5(rows, "Multiple locations found, please select from below.", ("Lcode", "Address", "City", "Province"))
         return row[0] # Return lcode
-
 
 # This function will take in a list of rows (List of tuples)
 # And scrolls through it, 5 at a time based off of user input.
 # Returns the row the user selects
-def Scroll5(rows, title):
+def Scroll5(rows, title, label):
     current = 0
     while (True):
         print("\n")
         print(title)
+        PrintLabels(label)
         for i in range(current, current + 5):
             if i > len(rows) - 1:
                 continue
-            print("%d." % (i + 1), rows[i])
+            PrintRow(i + 1, rows[i])
 
         validinput = False
         option = ""
@@ -137,6 +156,20 @@ def Scroll5(rows, title):
         elif option == "prev":
             current -= 5
 
+def PrintLabels(labels):
+    print("#   ", end="")
+    for item in labels:
+        print("|{:14.14}".format(item), end=" ")
+    print("")
+
+def PrintRow(index, row):
+
+    print("{:4}".format(str(index) + "."), end ="")
+    for item in row:
+        print("|{:14.14}".format(str(item)), end=" ")
+    print("")
+
+
 def BookOrCancel(c,conn,username):
     while(True):
         print("\nYour bookings:")
@@ -145,8 +178,9 @@ def BookOrCancel(c,conn,username):
                      bookings.rno = rides.rno AND
                      rides.driver = ?''',(username,))
         rows = c.fetchall()
+        PrintLabels(("Email", "Seats", "Cost", "Pickup", "Dropoff"))
         for row in rows:
-            print("%s: email: %s, seats: %s, cost: $%s, pickup: %s, dropoff: %s" % (row[0], row[1], row[2], row[3], row[4], row[5]))
+            PrintRow(row[0], row[1:])
         print("\n1. Create a new booking")
         print("2. Cancel a booking\n")
         choice = input("Please enter an option number, or 'exit': ")
@@ -166,7 +200,8 @@ def BookOrCancel(c,conn,username):
                 input("Press enter to continue...\n")
                 break
 
-            row = Scroll5(rows, "Select one of your rides to book\nrno, price, rdate, seats, lugDesc, src, dst, driver, cno, seats available")
+            row = Scroll5(rows, "Select one of your rides to book",
+                          ("Ride No.", "Price", "Date", "Seats", "Luggage", "Source", "Destination", "Driver", "Car No.", "Available Seats"))
             rno = row[0]
             member = input("Enter the email of the member you would like to book: ")
             seats = int(input("Enter the number of seats to book: "))
@@ -227,8 +262,48 @@ def BookOrCancel(c,conn,username):
 
         conn.commit()
 
-def PostRequests():
-    pass
+
+# This funciton alls members to post a request.
+def PostRequests(c, conn, username):
+    print('Please enter the details of your request.')
+    finished = False
+    while (not finished):
+        email = username
+        date = input('Please enter the date(YYYY-MM-DD): ')
+        try:
+            year, month, day = date.split('-')
+        except ValueError:
+            print("Invalid date string")
+            input("Press enter to continue...")
+            return False
+
+        year, month, day = date.split('-')
+        try:
+            datetime.datetime(int(year), int(month), int(day))
+        except:
+            print('Invalid date! Please enter it again!')
+            input("Press enter to continue...")
+            return False
+
+        pickup = input('Where do you want to be pick up(lcode)?')
+        dropoff = input('Where do you want to be drop off(lcode)?')
+        try:
+            price = int(input('How much are you willing to pay per seat(int)?'))
+            finished = True
+        except:
+            print('Please enter an integer!')
+    # generate unique ids for requests
+    c.execute("""SELECT max(rid) FROM
+                 requests""")
+    rid = c.fetchone()[0] + 1
+
+    post = ('''INSERT INTO requests
+               VALUES(?,?,?,?,?,?)
+            ''')
+    c.execute(post, [(rid), (username), (date), (pickup), (dropoff), (price)])
+    conn.commit()
+    print('Your request has been posted!')
+
 
 def SearchAndDelete(c, conn, username):
     while(True):
@@ -241,7 +316,7 @@ def SearchAndDelete(c, conn, username):
         if len(rows) == 0:
             print("(no requests found)")
         else:
-            print("rid, email, rdate, pickup, dropoff, amount")
+            PrintLabels("Request ID", "Email", "Date", "Pickup", "Dropoff", "Amount")
             i = 1
             for row in rows:
                 print("%d:" % i,row)
@@ -266,7 +341,7 @@ def SearchAndDelete(c, conn, username):
                 input("Press enter to continue...\n")
                 continue
 
-            email = Scroll5(rows, "Select a request to message the creator")[1]
+            email = Scroll5(rows, "Select a request to message the creator", ("Request ID", "Email", "Date", "Pickup", "Dropoff", "Price"))[1]
             message = input("Type a message to send: ")
             c.execute('''INSERT INTO inbox(email,msgTimestamp,sender, content, rno, seen)
                          VALUES(?, datetime("now"), ?, ?, NULL, "n")''', (email, username, message))
@@ -291,16 +366,21 @@ def SearchAndDelete(c, conn, username):
 
 def SearchRide(c,conn,username):
 
-    words = input("Please enter 1-3 keywords, separated by commas. ex: a,b,c: ")
+    words = input("Please enter 1-3 keywords, separated by commas. ex: a, b, c: ")
+    if len(words) == 0:
+        print("Invalid Search String. Cannot be blank")
+        input("Press enter to continue...\n")
+        return False
+
     wordlist = words.split(",")
     keywords = []
     for i in range(3):
         if i > len(wordlist) - 1:
-            keywords.append("")
+            keywords.append("NULL")
         else:
             keywords.append(wordlist[i])
-
-    c.execute('''SELECT DISTINCT * FROM(
+    print(keywords)
+    c.execute('''SELECT DISTINCT rno, price, rdate, seats, lugDesc, src, dst, driver FROM(
                  SELECT * FROM rides 
                  LEFT OUTER JOIN locations ON locations.lcode = rides.src
                  UNION
@@ -310,11 +390,11 @@ def SearchRide(c,conn,username):
                  SELECT * FROM enroute
                  LEFT OUTER JOIN rides USING(rno)
                  LEFT OUTER JOIN locations USING(lcode)) WHERE 
-                 :k1 = lcode OR city LIKE :k1 OR prov LIKE :k1 OR address LIKE :k1 OR
-                 :k2 = lcode OR city LIKE :k2 OR prov LIKE :k2 OR address LIKE :k2 OR
-                 :k3 = lcode OR city LIKE :k3 OR prov LIKE :k3 OR address LIKE :k3
+                 :k1a = lcode OR city LIKE :k1 OR prov LIKE :k1 OR address LIKE :k1 OR
+                 :k2a = lcode OR city LIKE :k2 OR prov LIKE :k2 OR address LIKE :k2 OR
+                 :k3a = lcode OR city LIKE :k3 OR prov LIKE :k3 OR address LIKE :k3
                  GROUP BY rno                   
-                 ''',{"k1":"%" + keywords[0] + "%","k2":"%" + keywords[1] + "%","k3":"%" + keywords[2] + "%"})
+                 ''',{"k1a":keywords[0], "k2a":keywords[1], "k3a":keywords[2],"k1":"%" + keywords[0] + "%","k2":"%" + keywords[1] + "%","k3":"%" + keywords[2] + "%"})
 
     rows = c.fetchall()
 
@@ -323,11 +403,12 @@ def SearchRide(c,conn,username):
         input("Press enter to continue...\n")
         return True
 
-    row = Scroll5(rows,"Here are the results: ")
+    row = Scroll5(rows,"Search Results:",
+                  ("Ride No.", "Price", "Date", "Seats", "Luggage", "Source", "Destination", "Driver"))
     print('You have selected the following ride: ')
     print(row)
     email = row[7]
-    content = 'I want to book a seat on your ride.'
+    content = 'I would like to book a seat on your ride.'
     rno = row[0]
     seen = 'n'
     sender = username
@@ -347,8 +428,8 @@ def menu(c, conn, username):
         print('4.Post ride requests')
         print('5.Search and delete ride requests')
         print('6.Logout')
-        print('7.Exit the program')
-        task = input('What task would you like to perform(1-6): ')
+        print('7.Exit the program\n')
+        task = input('What task would you like to perform? (1-6): ')
         if task == '1':
             OfferRide(c, conn, username)
 
@@ -359,7 +440,7 @@ def menu(c, conn, username):
             BookOrCancel(c, conn, username)
 
         elif task == '4':
-            PostRequests()
+            PostRequests(c, conn, username)
 
         elif task == '5':
             SearchAndDelete(c, conn, username)
