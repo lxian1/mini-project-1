@@ -384,26 +384,8 @@ def SearchRide(c,conn,username):
     if location_keyword[2] == '':
         keyword_c = location_keyword[0]
     else:
-        keyword_c = location_keyword[2]    
-    #Select the results that match all the keywords    
-    #search = c.execute('''SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno
-    #                      FROM rides r,enroute e,locations l
-    #                      WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
-    #                      AND e.rno = r.rno
-    #                      INTERSECT
-    #                      SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno
-    #                      FROM rides r,enroute e,locations l
-    #                      WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
-    #                      AND e.rno = r.rno
-    #                      INTERSECT
-    #                      SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno
-    #                      FROM rides r,enroute e,locations l
-    #                      WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
-    #                      AND e.rno = r.rno
-    #                   ''', ('%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
-    #                         '%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
-    #                         '%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a)))
-
+        keyword_c = location_keyword[2]
+        
     c.execute('''SELECT DISTINCT * FROM(
                  SELECT * FROM rides 
                  LEFT OUTER JOIN locations ON locations.lcode = rides.src
