@@ -15,7 +15,7 @@ def login():
         password = input('Please enter your password(integer): ')
         if password == 'exit':
             sys.exit('The program is closed')
-        conn = sqlite3.connect('./project1.db')
+        conn = sqlite3.connect('./project1.db') #TODO: Make this a command-line argument.
         c = conn.cursor()
         check = ('''SELECT * 
                     FROM members 
@@ -337,8 +337,8 @@ def SearchAndDelete(c, conn, username):
             c.execute('''SELECT DISTINCT rid, email, rdate, pickup, dropoff, amount
                          FROM requests, locations WHERE
                          requests.pickup = locations.lcode AND
-                         locations.lcode = ? OR
-                         locations.city = ?''', (code,code))
+                         locations.lcode LIKE ? OR
+                         locations.city LIKE ?''', (code,code))
             rows = c.fetchall()
             if len(rows) == 0:
                 print("No locations found.")
