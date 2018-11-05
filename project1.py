@@ -1,117 +1,43 @@
 import sqlite3
-import os.path
 import sys
-from secrets import randbelow
 import datetime
-
-print('###############################')
-print('path:' + os.getcwd())
-print('###############################')
-
-
-def login(database):
-    while True:
-        username = input('Please enter your username(email): ')
-        if username == 'exit':
-            sys.exit('The program is closed')
-        #elif username == '':
-            #print('Emial cannot be empty!')
-            #sys.exit('The program is closed')
-        password = input('Please enter your password(integer): ')
-        if password == 'exit':
-            sys.exit('The program is closed')
-        conn = sqlite3.connect(database) #TODO: Make this a command-line argument.
-        c = conn.cursor()
-        check = ('''SELECT * 
-                    FROM members 
-                    WHERE email = ? 
-                    AND pwd = ?''')
-        c.execute(check, [(username), (password)])
-        result = c.fetchone()
-        if result:
-            print('Welcome back!')
-            print('Your personal information: ')
-            print(result)
-            message = ('''SELECT content
-                          From inbox
-                          Where email = ?''')
-            c.execute(message, [username])
-            print('#######################')
-            print('Your unread message: ')
-            print(c.fetchone())
-            update_seen = ('''UPDATE inbox
-                              SET seen = 'y'
-                              WHERE email = ?''')
-            c.execute(update_seen, [username])
-            conn.commit()
-            menu(c, conn, username)
-
-            return False
-        else:
-            print('Invalid account!')
-            print('Try Again!')
-
-
-def register(database):
-    while True:
-        username = input('Please provide your username(email): ')
-        if username == 'exit':
-            sys.exit('The program is closed')
-        password = input('Please create your password(integer): ')
-        if password == 'exit':
-            sys.exit('The program is closed')
-        conn = sqlite3.connect(database)
-        c = conn.cursor()
-        check = ('''SELECT * 
-                    FROM members 
-                    WHERE email = ? ''')
-        c.execute(check, [(username)])
-        if c.fetchone():
-            print('This email has already been registered!')
-        else:
-            new = ('''INSERT INTO members VALUES(?,'','',?)''')
-            c.execute(new, [(username), (password)])
-            conn.commit()
-            print('You have successfully signed up!')
-            return False
-
-
-def logout(c, conn):
-    print('FAREWELL')
-    conn.close()
-    main()
-
-
-def close(c, conn):
-    print('The program is closing...')
-    print('Bye')
-    conn.close()
-
-
 
 def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride.
     print("Please provide your ride information")
-
-    ridedate = input("Ride Date (YYYY-MM-DD):")  # TODO: Validate date
-    year,month,day = ridedate.split('-')
-    check_date = True
+    date = input("Ride Date (YYYY-MM-DD):")
     try:
-        datetime.datetime(int(year),int(month),int(day))
+        year, month, day = date.split('-')
+    except ValueError:
+        print("Invalid date string")
+        input("Press enter to continue...")
+        return False
+
+    year, month, day = date.split('-')
+    try:
+        datetime.datetime(int(year), int(month), int(day))
     except:
-        check_date = False
-        print('Invalid date! Please enter it again!')
-        OfferRide(c,conn,username)    
+        print('Invalid date')
+        input("Press enter to continue...")
+        return False
+
+    if len(ridedate) != 10:
+        print("Invalid date string")
+        input("Press enter to continue...\n")
+        return 0
 
     seats = input("How many seats will be offered?: ")
     if not assertInt(seats):
+        input("Press enter to continue...\n")
         return 0
 
     price = input("What is the price per seat?: $")
     if not assertInt(seats):
+        input("Press enter to continue...\n")
         return 0
     price = int(price)
     if price <= 0:
         print("Value must be positive")
+        input("Press enter to continue...\n")
         return 0
 
     lugdesc = input("Enter a description for the luggage:")
@@ -134,6 +60,7 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
         rows = c.fetchall()
         if(not len(rows) > 0):
             print("Car not found, or is not under your ownership.")
+            input("Press enter to continue...\n")
             return 0
 
     c.execute('''SELECT max(rno)
@@ -143,8 +70,8 @@ def OfferRide(c, conn, username):  # The UI for when someone is inputting a ride
     c.execute('''INSERT INTO rides(rno, price, rdate, seats, lugDesc, src, dst, driver, cno)
                  VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)''', (rno, price, ridedate, seats, lugdesc, srclcode, dstlcode, username, cno))
     conn.commit()
-    print("Created ride")
-    input("Press enter to continue...")
+    print("Your ride has been created.")
+    input("Press enter to continue...\n")
     return 1
 
 
@@ -174,28 +101,28 @@ def HandleLocation(c, code):
         return rows[0] # Return lcode
     else:
         code = ("%" + code + "%")
-        c.execute("SELECT * FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?", (code, code, code))
+        c.execute("SELECT lcode, address, city, prov FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?", (code, code, code))
         rows = c.fetchall()
         if len(rows) == 0:
             print("No locations found")
+            input("Press enter to continue...\n")
             return 0
-        row = Scroll5(rows, """"Multiple locations found, please select from below.\n
-       Number, Lcode, City, Province, Address""")
+        row = Scroll5(rows, "Multiple locations found, please select from below.", ("Lcode", "Address", "City", "Province"))
         return row[0] # Return lcode
-
 
 # This function will take in a list of rows (List of tuples)
 # And scrolls through it, 5 at a time based off of user input.
 # Returns the row the user selects
-def Scroll5(rows, title):
+def Scroll5(rows, title, label):
     current = 0
     while (True):
         print("\n")
         print(title)
+        PrintLabels(label)
         for i in range(current, current + 5):
             if i > len(rows) - 1:
                 continue
-            print("%d." % (i + 1), rows[i])
+            PrintRow(i + 1, rows[i])
 
         validinput = False
         option = ""
@@ -229,9 +156,19 @@ def Scroll5(rows, title):
         elif option == "prev":
             current -= 5
 
-def ValidDate(time):  # TODO This function will check if the date someone enters is valid
-    pass              ## I checkded it inside the original function
-        
+def PrintLabels(labels):
+    print("#   ", end="")
+    for item in labels:
+        print("|{:14.14}".format(item), end=" ")
+    print("")
+
+def PrintRow(index, row):
+
+    print("{:4}".format(str(index) + "."), end ="")
+    for item in row:
+        print("|{:14.14}".format(str(item)), end=" ")
+    print("")
+
 
 def BookOrCancel(c,conn,username):
     while(True):
@@ -241,8 +178,9 @@ def BookOrCancel(c,conn,username):
                      bookings.rno = rides.rno AND
                      rides.driver = ?''',(username,))
         rows = c.fetchall()
+        PrintLabels(("Email", "Seats", "Cost", "Pickup", "Dropoff"))
         for row in rows:
-            print("%s: email: %s, seats: %s, cost: $%s, pickup: %s, dropoff: %s" % (row[0], row[1], row[2], row[3], row[4], row[5]))
+            PrintRow(row[0], row[1:])
         print("\n1. Create a new booking")
         print("2. Cancel a booking\n")
         choice = input("Please enter an option number, or 'exit': ")
@@ -257,8 +195,13 @@ def BookOrCancel(c,conn,username):
                          GROUP BY rides.rno)
                          WHERE driver = ?''', (username,))
             rows = c.fetchall()
+            if len(rows) == 0:
+                print("No rides found")
+                input("Press enter to continue...\n")
+                break
 
-            row = Scroll5(rows, "Select one of your rides to book\nrno, price, rdate, seats, lugDesc, src, dst, driver, cno, seats available")
+            row = Scroll5(rows, "Select one of your rides to book",
+                          ("Ride No.", "Price", "Date", "Seats", "Luggage", "Source", "Destination", "Driver", "Car No.", "Available Seats"))
             rno = row[0]
             member = input("Enter the email of the member you would like to book: ")
             seats = int(input("Enter the number of seats to book: "))
@@ -319,20 +262,29 @@ def BookOrCancel(c,conn,username):
 
         conn.commit()
 
-def PostRequests(c,conn,username):
+
+# This funciton alls members to post a request.
+def PostRequests(c, conn, username):
     print('Please enter the details of your request.')
     finished = False
     while (not finished):
         email = username
-        date =  input('Please enter the date(YYYY-MM-DD): ')
-        year,month,day = date.split('-')
-        check_date = True
+        date = input('Please enter the date(YYYY-MM-DD): ')
         try:
-            datetime.datetime(int(year),int(month),int(day))
+            year, month, day = date.split('-')
+        except ValueError:
+            print("Invalid date string")
+            input("Press enter to continue...")
+            return False
+
+        year, month, day = date.split('-')
+        try:
+            datetime.datetime(int(year), int(month), int(day))
         except:
-            check_date = False
             print('Invalid date! Please enter it again!')
-            PostRequests(c,conn,username)
+            input("Press enter to continue...")
+            return False
+
         pickup = input('Where do you want to be pick up(lcode)?')
         dropoff = input('Where do you want to be drop off(lcode)?')
         try:
@@ -340,14 +292,18 @@ def PostRequests(c,conn,username):
             finished = True
         except:
             print('Please enter an integer!')
-    #generate unique ids for requests
-    rid = randbelow(9999999999)
+    # generate unique ids for requests
+    c.execute("""SELECT max(rid) FROM
+                 requests""")
+    rid = c.fetchone()[0] + 1
+
     post = ('''INSERT INTO requests
                VALUES(?,?,?,?,?,?)
             ''')
-    c.execute(post,[(rid),(username),(date),(pickup),(dropoff),(price)])
+    c.execute(post, [(rid), (username), (date), (pickup), (dropoff), (price)])
     conn.commit()
     print('Your request has been posted!')
+
 
 def SearchAndDelete(c, conn, username):
     while(True):
@@ -360,7 +316,7 @@ def SearchAndDelete(c, conn, username):
         if len(rows) == 0:
             print("(no requests found)")
         else:
-            print("rid, email, rdate, pickup, dropoff, amount")
+            PrintLabels("Request ID", "Email", "Date", "Pickup", "Dropoff", "Amount")
             i = 1
             for row in rows:
                 print("%d:" % i,row)
@@ -382,10 +338,10 @@ def SearchAndDelete(c, conn, username):
             rows = c.fetchall()
             if len(rows) == 0:
                 print("No locations found.")
-                input("Press enter to continue...")
+                input("Press enter to continue...\n")
                 continue
 
-            email = Scroll5(rows, "Select a request to message the creator")[1]
+            email = Scroll5(rows, "Select a request to message the creator", ("Request ID", "Email", "Date", "Pickup", "Dropoff", "Price"))[1]
             message = input("Type a message to send: ")
             c.execute('''INSERT INTO inbox(email,msgTimestamp,sender, content, rno, seen)
                          VALUES(?, datetime("now"), ?, ?, NULL, "n")''', (email, username, message))
@@ -396,33 +352,35 @@ def SearchAndDelete(c, conn, username):
             selection = int(input("Please enter the index number above of the request you would like to delete: "))
             if selection < 1 or selection > len(rows):
                 print("Invalid index")
-                input("Press enter to continue...")
+                input("Press enter to continue...\n")
                 continue
             c.execute('''DELETE FROM requests WHERE
                          rid = ?''', (rows[selection - 1][0],))
             conn.commit()
         elif choice == "exit":
+            print("")
             return 1
         else:
             print("Invalid input")
-            input("Press enter to continue")
+            input("Press enter to continue...\n")
 
 def SearchRide(c,conn,username):
-    location_keyword = []# Create a list of key words
-    for i in range(0,3):
-        lkeyword = input("Please enter 1-3 location keywords: ").lower()
-        location_keyword.append(lkeyword)
-    keyword_a = location_keyword[0]
-    if location_keyword[1] == '':      
-        keyword_b = location_keyword[0]#The first keyword cannot be empty
-    else:                              #If the second or the third keywords are empty,set their values to the first keyword. 
-        keyword_b = location_keyword[1]
-    if location_keyword[2] == '':
-        keyword_c = location_keyword[0]
-    else:
-        keyword_c = location_keyword[2]
-        
-    c.execute('''SELECT DISTINCT * FROM(
+
+    words = input("Please enter 1-3 keywords, separated by commas. ex: a, b, c: ")
+    if len(words) == 0:
+        print("Invalid Search String. Cannot be blank")
+        input("Press enter to continue...\n")
+        return False
+
+    wordlist = words.split(",")
+    keywords = []
+    for i in range(3):
+        if i > len(wordlist) - 1:
+            keywords.append("NULL")
+        else:
+            keywords.append(wordlist[i])
+    print(keywords)
+    c.execute('''SELECT DISTINCT rno, price, rdate, seats, lugDesc, src, dst, driver FROM(
                  SELECT * FROM rides 
                  LEFT OUTER JOIN locations ON locations.lcode = rides.src
                  UNION
@@ -432,18 +390,25 @@ def SearchRide(c,conn,username):
                  SELECT * FROM enroute
                  LEFT OUTER JOIN rides USING(rno)
                  LEFT OUTER JOIN locations USING(lcode)) WHERE 
-                 :k1 = lcode OR city LIKE :k1 OR prov LIKE :k1 OR address LIKE :k1 OR
-                 :k2 = lcode OR city LIKE :k2 OR prov LIKE :k2 OR address LIKE :k2 OR
-                 :k3 = lcode OR city LIKE :k3 OR prov LIKE :k3 OR address LIKE :k3
+                 :k1a = lcode OR city LIKE :k1 OR prov LIKE :k1 OR address LIKE :k1 OR
+                 :k2a = lcode OR city LIKE :k2 OR prov LIKE :k2 OR address LIKE :k2 OR
+                 :k3a = lcode OR city LIKE :k3 OR prov LIKE :k3 OR address LIKE :k3
                  GROUP BY rno                   
-                 ''',{"k1":"%" + keyword_a + "%","k2":"%" + keyword_b + "%","k3":"%" + keyword_c + "%"})
+                 ''',{"k1a":keywords[0], "k2a":keywords[1], "k3a":keywords[2],"k1":"%" + keywords[0] + "%","k2":"%" + keywords[1] + "%","k3":"%" + keywords[2] + "%"})
 
     rows = c.fetchall()
-    row = Scroll5(rows,"Here are the results: ")
-    print('Thanks for selecting this ride: ')
+
+    if len(rows) == 0:
+        print("No results found")
+        input("Press enter to continue...\n")
+        return True
+
+    row = Scroll5(rows,"Search Results:",
+                  ("Ride No.", "Price", "Date", "Seats", "Luggage", "Source", "Destination", "Driver"))
+    print('You have selected the following ride: ')
     print(row)
     email = row[7]
-    content = 'I want to book a seat on your ride.'
+    content = 'I would like to book a seat on your ride.'
     rno = row[0]
     seen = 'n'
     sender = username
@@ -453,57 +418,134 @@ def SearchRide(c,conn,username):
     c.execute(message,[(email),(sender),(content),(rno),(seen)])
     conn.commit()
     print('A message has been sent to the driver.')
+    input("Press enter to continue...\n")
 
 def menu(c, conn, username):
-    print('1.Offer a ride')
-    print('2.Search for rides')
-    print('3.Book members or cancel bookings.')
-    print('4.Post ride requests')
-    print('5.Search and delete ride requests')
-    print('6.Logout')
-    print('7.Exit the program')
-    task = input('What task would you like to perform(1-6):')
-    if task == '1':
-        OfferRide(c, conn, username)
-        print('##############')
-        menu(c, conn, username)
+    while(True):
+        print('1.Offer a ride')
+        print('2.Search for rides')
+        print('3.Book members or cancel bookings.')
+        print('4.Post ride requests')
+        print('5.Search and delete ride requests')
+        print('6.Logout')
+        print('7.Exit the program\n')
+        task = input('What task would you like to perform? (1-6): ')
+        if task == '1':
+            OfferRide(c, conn, username)
 
-    elif task == '2':
-        SearchRide(c,conn,username)
-        print('################')
-        menu(c, conn, username)
+        elif task == '2':
+            SearchRide(c,conn,username)
 
-    elif task == '3':
-        BookOrCancel(c, conn, username)
-        print('################')
-        menu(c, conn, username)
+        elif task == '3':
+            BookOrCancel(c, conn, username)
 
-    elif task == '4':
-        PostRequests(c,conn,username)
-        print('################')
-        menu(c, conn, username)
+        elif task == '4':
+            PostRequests(c, conn, username)
 
-    elif task == '5':
-        SearchAndDelete(c, conn, username)
-        print('################ ')
-        menu(c, conn, username)
+        elif task == '5':
+            SearchAndDelete(c, conn, username)
 
-    elif task == '6':
-        logout(c, conn)
+        elif task == '6':
+            print("Logging out. Farewell!\n")
+            return False
 
-    elif task == '7':
-        close(c, conn)
+        elif task == '7':
+            return True
 
+def login():
+    while True:
+        username = input('Please enter your username(email): ')
+        if username == 'exit':
+            sys.exit('The program is closed')
+        password = input('Please enter your password(integer): ')
+        if password == 'exit':
+            sys.exit('The program is closed')
+        file = sys.argv[1]
+        conn = sqlite3.connect('./%s' % file)
+        c = conn.cursor()
+        check = ('''SELECT * 
+                    FROM members 
+                    WHERE email = ? 
+                    AND pwd = ?''')
+        c.execute(check, [(username), (password)])
+        result = c.fetchone()
+        if result:
+            print('Welcome back!\n')
+            message = ('''SELECT content
+                          From inbox
+                          Where email = ? AND
+                          seen = "n"''')
+            c.execute(message, [username])
+            print('Unread messages: ')
+            rows = c.fetchall()
+            if len(rows) == 0:
+                print("(You have no new messages)")
+            for email in rows:
+                print(email)
+            update_seen = ('''UPDATE inbox
+                              SET seen = 'y'
+                              WHERE email = ?''')
+            c.execute(update_seen, [username])
+            conn.commit()
+            print("")
+            # Start the menu:
+            if menu(c, conn, username): # If we get back a true value, terminate the program. Propagate up to main
+                conn.close()
+                return True
+
+            return False
+        else:
+            print('Invalid account!')
+            print('Try Again!')
+
+
+def register():
+    while True:
+        print("")
+        print("Now registering a new account. Type 'exit' to cancel")
+        username = input('Please provide your username(email): ')
+        if username == 'exit':
+            return True
+        password = input('Please create your password(integer): ')
+        if password == 'exit':
+            return True
+        file = sys.argv[1]
+        conn = sqlite3.connect('./%s' % file)
+        c = conn.cursor()
+        check = ('''SELECT * 
+                    FROM members 
+                    WHERE email = ? ''')
+        c.execute(check, [(username)])
+        if c.fetchone():
+            print('This email has already been registered!')
+        else:
+            new = ('''INSERT INTO members VALUES(?,'','',?)''')
+            c.execute(new, [(username), (password)])
+            conn.commit()
+            print('You have successfully signed up!')
+            return False
+
+def logout(c, conn):
+    print('FAREWELL')
+    conn.close()
 
 def main():
-    print('You can exit anytime by input "exit"')
-    db = input('Enter the name of your database : ')
-    membership = input('Do you have an account?(Y/N):').upper()   
-    if membership == 'Y':
-        login(db)
-    elif membership == 'N':
-        register(db)
-        login(db)
-    elif membership == 'EXIT':
-        sys.exit('The program is closed')
+    while(True):
+        print("Program Login\n")
+        print("1. Login")
+        print("2. Register\n")
+
+        membership = input("Please enter the number corresponding to your selection, or 'exit' to terminate the program: ").upper()
+        if membership == '1':
+            if login():  # If login returns a true value, then we should terminate the program.
+                break
+        elif membership == '2':
+            if register():  # If register returns a true value, then an account was not registered. Clear menu
+                continue
+            if login():
+                break
+        elif membership == 'EXIT':
+            break
+
+    return 0
 main()
