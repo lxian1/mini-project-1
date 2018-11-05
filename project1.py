@@ -187,7 +187,7 @@ def Scroll5(rows, title):
         validinput = False
         option = ""
         while (not validinput):
-            print("\n")
+            print("")
             if current + 5 > len(rows) - 1:
                 option = input("Select a number from above, or 'prev' to see previous options: ")
                 if option == "prev":
@@ -370,50 +370,6 @@ def SearchAndDelete(c, conn, username):
 
 def ValidDate(): # TODO This function will check if the date someone enters is valid
     pass
-    
-
-#This function is a special version of Scroll5
-#And it's only used in Q2
-def Scroll5_Q2(rows, title):
-    current = 0
-    while(True):
-        print(title)
-        for i in range(current, current+5):
-            if i > len(rows) - 1:
-                print("")
-                continue
-            print(i + 1,rows[i])
- 
-        validinput = False
-        option = ""
-        while(not validinput):
-            if current + 5 > len(rows) - 1:
-                option = input("Select a number from above, or 'prev' to see previous options: ")
-                if option == "prev":
-                    validinput = True
-            elif current == 0:
-                option = input("Select a number from above, or input 'next' for more options: ")
-                if option == "next":
-                    validinput = True
-            else:
-                option = input("Select a number from above, or input 'prev or 'next' to see previous or more options: ")
-                if option == "next" or option == "prev":
-                    validinput = True
- 
-            if not validinput:
-                try:
-                    numoption = int(option)
-                except ValueError:
-                    print("Invalid input")
-                else:
-                    if 1 <= numoption and numoption <= len(rows):
-                        return rows[int(option)-1]
-                    else:
-                        print("Invalid option number, out of bounds.")
-        if option == "next":
-            current += 5
-        elif option == "prev":
-            current -= 5
 
 def SearchRide(c,conn,username):
     location_keyword = []# Create a list of key words
@@ -430,25 +386,42 @@ def SearchRide(c,conn,username):
     else:
         keyword_c = location_keyword[2]    
     #Select the results that match all the keywords    
-    search = c.execute('''SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno 
-                          FROM rides r,enroute e,locations l
-                          WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
-                          AND e.rno = r.rno
-                          INTERSECT
-                          SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno 
-                          FROM rides r,enroute e,locations l
-                          WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
-                          AND e.rno = r.rno
-                          INTERSECT
-                          SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno 
-                          FROM rides r,enroute e,locations l
-                          WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
-                          AND e.rno = r.rno
-                       ''', ('%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
-                             '%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
-                             '%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a)))
+    #search = c.execute('''SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno
+    #                      FROM rides r,enroute e,locations l
+    #                      WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
+    #                      AND e.rno = r.rno
+    #                      INTERSECT
+    #                      SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno
+    #                      FROM rides r,enroute e,locations l
+    #                      WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
+    #                      AND e.rno = r.rno
+    #                      INTERSECT
+    #                      SELECT r.rno,r.price,r.rdate,r.seats,r.lugDesc,r.src,r.dst,r.driver,r.cno
+    #                      FROM rides r,enroute e,locations l
+    #                      WHERE r.src LIKE ? OR r.dst LIKE ? OR e.lcode LIKE ? OR l.city LIKE ? OR l.prov LIKE ? OR l.address LIKE ?
+    #                      AND e.rno = r.rno
+    #                   ''', ('%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
+    #                         '%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_b),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a),
+    #                         '%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_c),'%{}%'.format(keyword_a),'%{}%'.format(keyword_a)))
+
+    c.execute('''SELECT DISTINCT * FROM(
+                 SELECT * FROM rides 
+                 LEFT OUTER JOIN locations ON locations.lcode = rides.src
+                 UNION
+                 SELECT * FROM rides
+                 LEFT OUTER JOIN locations ON locations.lcode = rides.dst
+                 UNION
+                 SELECT * FROM enroute
+                 LEFT OUTER JOIN rides USING(rno)
+                 LEFT OUTER JOIN locations USING(lcode)) WHERE 
+                 :k1 = lcode OR city LIKE :k1 OR prov LIKE :k1 OR address LIKE :k1 OR
+                 :k2 = lcode OR city LIKE :k2 OR prov LIKE :k2 OR address LIKE :k2 OR
+                 :k3 = lcode OR city LIKE :k3 OR prov LIKE :k3 OR address LIKE :k3
+                 GROUP BY rno                   
+                 ''',{"k1":"%" + keyword_a + "%","k2":"%" + keyword_b + "%","k3":"%" + keyword_c + "%"})
+
     rows = c.fetchall()
-    row = Scroll5_Q2(rows,"Here are the results: ")
+    row = Scroll5(rows,"Here are the results: ")
     print('Thanks for selecting this ride: ')
     print(row)
     email = row[7]
