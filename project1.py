@@ -14,8 +14,13 @@ def login():
             sys.exit('The program is closed')        
         password = input('Please enter your password(integer): ')
         if password == 'exit':
+<<<<<<< HEAD
             sys.exit('The program is closed')        
         conn = sqlite3.connect('./project1.db')
+=======
+            sys.exit('The program is closed')
+        conn = sqlite3.connect('./project1.db') #TODO: Make this a command-line argument.
+>>>>>>> seiver
         c = conn.cursor()
         check = ('''SELECT * 
                     FROM members 
@@ -39,8 +44,13 @@ def login():
                               WHERE email = ?''')
             c.execute(update_seen,[username])
             conn.commit()
+<<<<<<< HEAD
             menu(c,conn,username)
             
+=======
+            menu(c, conn, username)
+
+>>>>>>> seiver
             return False
         else:
             print('Invalid account!')
@@ -82,30 +92,73 @@ def close(c,conn):
 
 def OfferRide(c, conn, username): # The UI for when someone is inputting a ride.
     print("Please provide your ride information")
+<<<<<<< HEAD
     ridedate = input("Ride Date (YYYY-MM-DD):") # TODO: Validate date
+=======
+
+    ridedate = input("Ride Date (YYYY-MM-DD):")  # TODO: Validate date
+
+>>>>>>> seiver
     seats = input("How many seats will be offered?: ")
-    try:
-        int(seats)
-    except ValueError:
-        print("Value was not an integer amount!")
+    if not assertInt(seats):
         return 0
+
     price = input("What is the price per seat?: $")
+    if not assertInt(seats):
+        return 0
+    price = int(price)
+    if price <= 0:
+        print("Value must be positive")
+        return 0
+
+    lugdesc = input("Enter a description for the luggage:")
+
+    src = input("Enter the source location (lcode, or keyword):")
+    srclcode = HandleLocation(c, src)
+    if not srclcode:
+        return 0
+    dst = input("Enter the destination location (lcode, or keyword):")
+    dstlcode = HandleLocation(c, dst)
+    if not dstlcode:
+        return 0
+    cno = input("Input Car number, or leave blank:")
+    #if a value for cno was entered, check if the car belongs to them:
+    if cno:
+        c.execute('''SELECT cno 
+                     FROM cars WHERE
+                     owner = ? AND
+                     cno = ?''', (username,cno))
+        rows = c.fetchall()
+        if(not len(rows) > 0):
+            print("Car not found, or is not under your ownership.")
+            return 0
+
+    c.execute('''SELECT max(rno)
+                 FROM rides''')
+    rno = c.fetchone()[0] + 1
+
+    c.execute('''INSERT INTO rides(rno, price, rdate, seats, lugDesc, src, dst, driver, cno)
+                 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)''', (rno, price, ridedate, seats, lugdesc, srclcode, dstlcode, username, cno))
+    conn.commit()
+    print("Created ride")
+    input("Press enter to continue...")
+    return 1
+
+
+def assertInt(value):  # Returns 1 if a valid integer was used.
     try:
-        int(seats)
+        int(value)
     except ValueError:
         print("Value was not an integer amount!")
         return 0
-    lugdesc = input("Enter a description for the luggage:")
-    src = input("Enter the source location (lcode, or keyword):")
-    HandleLocation(c, src)
-    dst = input("Enter the destination location (lcode, or keyword):")
-    HandleLocation(c, dst)
+    return 1
 
 # This function handles whether a lcode entered is valid
 # or helps find a city based off of a keyword.
 # returns an lcode if we were able to find a location
 # returns 0 if no location was found
 def HandleLocation(c, code):
+<<<<<<< HEAD
     c.execute("""SELECT *
                  FROM locations WHERE
                  lcode = ?""", code)
@@ -121,6 +174,28 @@ def HandleLocation(c, code):
         row = Scroll5(rows,""""Multiple locations found, please select from below.\n
         Number, Lcode, City, Province, Address""")
         return row[0]
+=======
+    c.execute('''SELECT *
+                FROM locations WHERE
+                lcode = ?''', (code,))
+
+    rows = c.fetchall()
+    if len(rows) == 1:  # If there is only one location matching the string
+        rows = rows[0]
+        city, prov, address = rows[1], rows[2], rows[3]
+        print("Location set to: %s, %s, %s" % (address, city, prov))
+        return rows[0] # Return lcode
+    else:
+        code = ("%" + code + "%")
+        c.execute("SELECT * FROM locations WHERE address LIKE ? OR prov LIKE ? OR city LIKE ?", (code, code, code))
+        rows = c.fetchall()
+        if len(rows) == 0:
+            print("No locations found")
+            return 0
+        row = Scroll5(rows, """"Multiple locations found, please select from below.\n
+       Number, Lcode, City, Province, Address""")
+        return row[0] # Return lcode
+>>>>>>> seiver
 
 
 # This function will take in a list of rows (List of tuples)
@@ -128,17 +203,30 @@ def HandleLocation(c, code):
 # Returns the row the user selects
 def Scroll5(rows, title):
     current = 0
+<<<<<<< HEAD
     while(True):
+=======
+    while (True):
+        print("\n")
+>>>>>>> seiver
         print(title)
         for i in range(current, current+5):
             if i > len(rows) - 1:
-                print("")
                 continue
+<<<<<<< HEAD
             print(i + 1,rows[i])
  
         validinput = False
         option = ""
         while(not validinput):
+=======
+            print("%d." % (i + 1), rows[i])
+
+        validinput = False
+        option = ""
+        while (not validinput):
+            print("\n")
+>>>>>>> seiver
             if current + 5 > len(rows) - 1:
                 option = input("Select a number from above, or 'prev' to see previous options: ")
                 if option == "prev":
@@ -159,7 +247,7 @@ def Scroll5(rows, title):
                     print("Invalid input")
                 else:
                     if 1 <= numoption and numoption <= len(rows):
-                        return rows[int(option)]
+                        return rows[int(option) - 1]
                     else:
                         print("Invalid option number, out of bounds.")
         if option == "next":
@@ -167,11 +255,160 @@ def Scroll5(rows, title):
         elif option == "prev":
             current -= 5
 
+<<<<<<< HEAD
+
+=======
+def ValidDate():  # TODO This function will check if the date someone enters is valid
+
+    pass
+>>>>>>> seiver
+
+def BookOrCancel(c,conn,username):
+    while(True):
+        print("\nYour bookings:")
+        c.execute('''SELECT bno, email, rides.seats, cost, pickup, dropoff 
+                     FROM bookings, rides WHERE
+                     bookings.rno = rides.rno AND
+                     rides.driver = ?''',(username,))
+        rows = c.fetchall()
+        for row in rows:
+            print("%s: email: %s, seats: %s, cost: $%s, pickup: %s, dropoff: %s" % (row[0], row[1], row[2], row[3], row[4], row[5]))
+        print("\n1. Create a new booking")
+        print("2. Cancel a booking\n")
+        choice = input("Please enter an option number, or 'exit': ")
+
+        if(choice[0] == "1"): #Create a new booking
+            c.execute('''SELECT * FROM(
+                         SELECT rides.rno, rides.price, rides.rdate, 
+                         rides.seats, rides.lugDesc, rides.src, rides.dst, 
+                         rides.driver, rides.cno, CAST(rides.seats - total(bookings.seats) AS INT) FROM
+                         rides LEFT OUTER JOIN bookings ON
+                         rides.rno = bookings.rno
+                         GROUP BY rides.rno)
+                         WHERE driver = ?''', (username,))
+            rows = c.fetchall()
+
+            row = Scroll5(rows, "Select one of your rides to book\nrno, price, rdate, seats, lugDesc, src, dst, driver, cno, seats available")
+            rno = row[0]
+            member = input("Enter the email of the member you would like to book: ")
+            seats = int(input("Enter the number of seats to book: "))
+
+            contin = True
+            if seats > row[9]: # Overbooking detection
+                while (True):
+                    choice = input("Warning: this ride will be overbooked. Continue? (Y/N): ").upper()
+                    if choice[0] == "N":
+                        contin = False
+                        break
+                    elif choice[0] == "Y":
+                        contin = True
+                        break
+            if not contin:
+                continue
+
+<<<<<<< HEAD
+=======
+            costper = int(input("Enter the cost per seat: $"))
+            pickup = input("Enter the pickup location code: ")
+            dropoff = input("Enter the dropoff location code: ")
+            cost = costper * seats
+
+            c.execute('''SELECT max(bno) + 1 FROM
+                         bookings''')
+            bno = c.fetchone()[0]
+            c.execute('''INSERT INTO bookings
+                         VALUES(?, ?, ?, ?, ?, ?, ?)''', (bno, member, rno, cost, seats, pickup, dropoff))
+            message = "Booking created: %s, with %s, from %s to %s" % (bno, username, pickup, dropoff)
+            c.execute('''INSERT INTO inbox
+                         VALUES(?, datetime("now"), NULL, ?, ?, "n")''', (member, message, rno))
+
+            print("Booking created successfully")
+            input("Press enter to continue...")
+
+        elif(choice[0] == "2"): #Cancel a booking
+            choice = input("Enter the booking number you would like to cancel: ")
+            c.execute('''SELECT bno, driver, rdate, src, dst, email, rides.rno FROM 
+                         bookings, rides WHERE
+                         bookings.rno = rides.rno AND
+                         bno = ? AND 
+                         driver = ?''', (choice, username))
+            rows = c.fetchall()
+
+            if(len(rows) == 1):
+                c.execute('''DELETE FROM
+                             bookings WHERE
+                             bno = ?''', (choice,))
+                rows = rows[0]
+                message = "Booking cancelled: %s, with %s, at %s from pickup %s to dropoff %s" % (rows[0], rows[1], rows[2], rows[3], rows[4])
+                c.execute('''INSERT INTO inbox
+                             VALUES(?, datetime("now"), NULL, ?, ?, "n")''', (rows[5], message, rows[6]))
+            else:
+                print("Failed to delete booking: invalid number, or you do not have permission")
+                input("Press enter to continue...")
+
+        elif(choice == "exit"):
+            return 1
+
+        conn.commit()
+>>>>>>> seiver
 
 
+<<<<<<< HEAD
+=======
+def SearchAndDelete(c, conn, username):
+    while(True):
+        print("")
+        print("Your ride requests:\n")
+        c.execute('''SELECT * FROM
+                     requests WHERE
+                     email = ?''', (username,))
+        rows = c.fetchall()
+        if len(rows) == 0:
+            print("(no requests found)")
+        else:
+            print("rid, email, rdate, pickup, dropoff, amount")
+            i = 1
+            for row in rows:
+                print("%d:" % i,row)
+                i += 1
 
+        print("")
+        print("1. Search for a request")
+        if len(rows) != 0:
+            print("2. Delete a ride request\n")
 
+        choice = input("Please enter an option number, or 'exit': ")
+        if choice == "1":
+            code = (input("Please enter a location code, or city name: ")).capitalize()
+            c.execute('''SELECT DISTINCT rid, email, rdate, pickup, dropoff, amount
+                         FROM requests, locations WHERE
+                         requests.pickup = locations.lcode AND
+                         locations.lcode LIKE ? OR
+                         locations.city LIKE ?''', (code,code))
+            rows = c.fetchall()
+            if len(rows) == 0:
+                print("No locations found.")
+                input("Press enter to continue...")
+                continue
 
+            email = Scroll5(rows,"Select a request to message the creator")[1]
+            message = input("Type a message to send: ")
+            c.execute('''INSERT INTO inbox(email,msgTimestamp,sender, content, rno, seen)
+                         VALUES(?, datetime("now"), ?, ?, NULL, "n")''', (email, username, message))
+            conn.commit()
+            print("Message sent")
+
+        elif choice == "2" and len(rows) != 0:
+            selection = int(input("Please enter the index number above of the request you would like to delete: "))
+            c.execute('''DELETE FROM requests WHERE
+                         rid = ?''', (rows[selection - 1][0],))
+        elif choice == "exit":
+            return 1
+        else:
+            print("Invalid input")
+            input("Press enter to continue")
+
+>>>>>>> seiver
 
 def ValidDate(): # TODO This function will check if the date someone enters is valid
     pass
@@ -204,14 +441,24 @@ def menu(c,conn,username):
         SerchRide(c,conn)
         
     elif task == '3':
+<<<<<<< HEAD
         BookOrCancel()
         
+=======
+        BookOrCancel(c, conn, username)
+
+>>>>>>> seiver
     elif task == '4':
         PostRequests()
         
     elif task == '5':
+<<<<<<< HEAD
         SerchAndDelete()
     
+=======
+        SearchAndDelete(c, conn, username)
+
+>>>>>>> seiver
     elif task == '6':
         logout(c,conn)
     
@@ -239,4 +486,9 @@ def main():
         login()
     elif membership == 'EXIT':
         sys.exit('The program is closed')
+<<<<<<< HEAD
 main()
+=======
+
+main()
+>>>>>>> seiver
