@@ -1,6 +1,8 @@
 import sqlite3
 import os.path
 import sys
+import datetime
+from secrets import randbelow
 
 
 print('###############################')
@@ -274,8 +276,71 @@ def SerchRide(c,conn,username):
 #def BookOrCancel():
     #break
 
-#def PostRequests():
-    #break
+
+#This funciton alls members to post a request.
+def PostRequests(c,conn,username):
+    print('Please enter the details of your request.')
+    finished = False
+    while (not finished):
+        email = username
+        date =  input('Please enter the date(YYYY-MM-DD): ')
+        year,month,day = date.split('-')
+        check_date = True
+        try:
+            datetime.datetime(int(year),int(month),int(day))
+        except:
+            check_date = False
+            print('Invalid date! Please enter it again!')
+            PostRequests(c,conn,username)
+        pickup = input('Where do you want to be pick up(lcode)?')
+        dropoff = input('Where do you want to be drop off(lcode)?')
+        try:
+            price = int(input('How much are you willing to pay per seat(int)?'))
+            finished = True
+        except:
+            print('Please enter an integer!')
+    #generate unique ids for requests
+    rid = randbelow(9999999999)
+    post = ('''INSERT INTO requests
+               VALUES(?,?,?,?,?,?)
+            ''')
+    c.execute(post,[(rid),(username),(date),(pickup),(dropoff),(price)])
+    conn.commit()
+    print('Your request has been posted!')
+    
+    
+    
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 #def SerchAndDelete():
     #break
@@ -299,7 +364,7 @@ def menu(c,conn,username):
         BookOrCancel()
         
     elif task == '4':
-        PostRequests()
+        PostRequests(c,conn,username)
         
     elif task == '5':
         SerchAndDelete()
